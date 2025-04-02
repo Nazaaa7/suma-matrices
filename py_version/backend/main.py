@@ -1,29 +1,29 @@
-from flask import Flask, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os
 
-app = Flask(__name__, static_folder='static')  # Asegúrate de que la carpeta 'static' esté en el mismo directorio que este archivo
-CORS(app)  # Permite CORS para todas las rutas
+app = Flask(__name__)
+CORS(app)  # Permite peticiones desde cualquier origen
 
-@app.route('/')
-def home():
-    # Redirige a index.html cuando se accede a la raíz
-    return send_from_directory(os.path.join(app.root_path, 'static'), 'index.html')
-
-@app.route('/sumar', methods=['POST'])
-def sumar():
+@app.route('/sumar-matrices', methods=['POST'])
+def sumar_matrices():
     try:
-        datos = request.get_json()
-        matriz1 = datos['matriz1']
-        matriz2 = datos['matriz2']
+        data = request.get_json()
+        matriz1 = data.get('matriz1')
+        matriz2 = data.get('matriz2')
+
+        if not matriz1 or not matriz2:
+            return jsonify({"error": "Las matrices son necesarias"}), 400
+
+        # Verificar si las matrices tienen las mismas dimensiones
         if len(matriz1) != len(matriz2) or len(matriz1[0]) != len(matriz2[0]):
-            return jsonify({'error': 'Las matrices deben tener las mismas dimensiones'}), 400
-        
+            return jsonify({"error": "Las matrices deben tener las mismas dimensiones"}), 400
+
         resultado = [[matriz1[i][j] + matriz2[i][j] for j in range(len(matriz1[0]))] for i in range(len(matriz1))]
-        return jsonify({'resultado': resultado})
+        
+        return jsonify({"resultado": resultado})
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    app.run(debug=True, port=5000)

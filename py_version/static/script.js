@@ -1,56 +1,82 @@
-function generarMatrices() {
-    const filas = document.getElementById('filas').value;
-    const columnas = document.getElementById('columnas').value;
-    const contenedor = document.getElementById('matrices');
-    contenedor.innerHTML = '';
-    
-    ['Matriz 1', 'Matriz 2'].forEach((titulo, index) => {
-        const div = document.createElement('div');
-        div.innerHTML = `<h3>${titulo}</h3>`;
-        for (let i = 0; i < filas; i++) {
-            for (let j = 0; j < columnas; j++) {
-                div.innerHTML += `<input type='number' id='${titulo}_${i}_${j}' value='0'>`;
-            }
-            div.innerHTML += '<br>';
-        }
-        contenedor.appendChild(div);
-    });
-}
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('matrix-form');
+    const matricesContainer = document.getElementById('matrices');
+    const resultContainer = document.getElementById('result');
 
-function sumarMatrices() {
-    const filas = document.getElementById('filas').value;
-    const columnas = document.getElementById('columnas').value;
-    let matriz1 = [], matriz2 = [];
-    
-    for (let i = 0; i < filas; i++) {
-        matriz1.push([]);
-        matriz2.push([]);
-        for (let j = 0; j < columnas; j++) {
-            matriz1[i].push(Number(document.getElementById(`Matriz 1_${i}_${j}`).value));
-            matriz2[i].push(Number(document.getElementById(`Matriz 2_${i}_${j}`).value));
+    window.generarInputs = function () {
+        matricesContainer.innerHTML = '';
+        const filas = parseInt(document.getElementById('filas').value);
+        const columnas = parseInt(document.getElementById('columnas').value);
+
+        if (isNaN(filas) || isNaN(columnas) || filas <= 0 || columnas <= 0) {
+            alert('Ingrese valores válidos para filas y columnas');
+            return;
         }
-    }
-    
-    fetch('http://localhost:5000/sumar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matriz1, matriz2 })
-    })
-    .then(response => response.json())
-    .then(data => {
-        let resultadoDiv = document.getElementById('resultado');
-        resultadoDiv.innerHTML = '';
-        if (data.resultado) {
-            data.resultado.forEach(fila => {
-                resultadoDiv.innerHTML += fila.join(' ') + '<br>';
+
+        for (let m = 1; m <= 2; m++) {
+            let matrizHTML = `<h3>Matriz ${m}</h3><table>`;
+            for (let i = 0; i < filas; i++) {
+                matrizHTML += '<tr>';
+                for (let j = 0; j < columnas; j++) {
+                    matrizHTML += `<td><input type="number" id="m${m}-${i}-${j}" required></td>`;
+                }
+                matrizHTML += '</tr>';
+            }
+            matrizHTML += '</table>';
+            matricesContainer.innerHTML += matrizHTML;
+        }
+    };
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        const filas = parseInt(document.getElementById('filas').value);
+        const columnas = parseInt(document.getElementById('columnas').value);
+        
+        const matriz1 = [];
+        const matriz2 = [];
+        
+        for (let i = 0; i < filas; i++) {
+            matriz1.push([]);
+            matriz2.push([]);
+            for (let j = 0; j < columnas; j++) {
+                const val1 = parseFloat(document.getElementById(`m1-${i}-${j}`).value);
+                const val2 = parseFloat(document.getElementById(`m2-${i}-${j}`).value);
+                
+                if (isNaN(val1) || isNaN(val2)) {
+                    alert('Todos los valores deben ser números');
+                    return;
+                }
+                
+                matriz1[i].push(val1);
+                matriz2[i].push(val2);
+            }
+        }
+
+        try {
+            const response = await fetch('http://localhost:5000/sumar-matrices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ matriz1, matriz2 })
             });
-        } else {
-            resultadoDiv.innerHTML = 'Hubo un error al sumar las matrices.';
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status} - ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            
+            resultContainer.innerHTML = '<h3>Matriz Resultante:</h3>' +
+                '<table>' +
+                data.resultado.map(row => `<tr>${row.map(val => `<td>${val}</td>`).join('')}</tr>`).join('') +
+                '</table>';
+        } catch (error) {
+            alert('Error al conectar con el servidor: ' + error.message);
         }
-    })
-    .catch(error => {
-        console.error('Error al hacer la solicitud:', error);
-        let resultadoDiv = document.getElementById('resultado');
-        resultadoDiv.innerHTML = 'Hubo un problema con la solicitud al servidor.';
     });
-}
+});

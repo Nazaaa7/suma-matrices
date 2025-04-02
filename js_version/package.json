@@ -1,0 +1,14 @@
+{
+  "name": "sumar-matrices-js",
+  "version": "1.0.0",
+  "description": "Aplicación para sumar matrices usando Node.js y JavaScript",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node backend/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}
